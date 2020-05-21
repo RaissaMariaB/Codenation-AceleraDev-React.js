@@ -1,44 +1,86 @@
-const promotions = ['SINGLE LOOK', 'DOUBLE LOOK', 'TRIPLE LOOK', 'FULL LOOK'];
+const SINGLE_LOOK = 'SINGLE LOOK';
+const DOUBLE_LOOK = 'DOUBLE LOOK';
+const TRIPLE_LOOK = 'TRIPLE LOOK';
+const FULL_LOOK = 'FULL LOOK';
 
-const { products } = require('../src/data/products');
-
-
-const identificador = [210,340,150]
-
-
-function getShoppingCart(ids, productsList) {	
+function getShoppingById(ids, productsList) {	
 	return productsList.filter( (item) => {
 		return ids.includes(item.id) 			
 	})
+};
+
+function getProductsByCategory(productsByIds) {	
+	return productsByIds.map(item => item.category)
+};
+
+function pickCategoryToGroup(productByCategory) {
+	return [...new Set(productByCategory)].length
+};
+
+function selectPromotionByCategory(categories) {
+	if(categories == 4 ){
+		return FULL_LOOK; 
+	} else if(categories == 3){
+		return TRIPLE_LOOK;
+
+	} else if(categories == 2){
+		return DOUBLE_LOOK
+	
+	} else if(categories == 1){
+		return SINGLE_LOOK
+	}
+};
+
+function calculateShoppingCartTotalPrice(promotionType, productsList) {
+	const totalValueShoppingCart = productsList.reduce((acc, product, index) => {
+		return acc + product.regularPrice
+	}, 0)
+
+	return totalValueShoppingCart
+};
+
+function calculateShoppingCartTotalPriceWithDiscount(promotionType, productsList) {
+	const totalValueShoppingCart = productsList.reduce((acc, product, index) => {
+		const productPrice = getProductPromotionedPrice(promotionType, product)
+		return acc + productPrice
+	}, 0)
+
+	return totalValueShoppingCart
+};
+
+function getProductPromotionedPrice(promotionType, item) {
+	const itemPromotion = item.promotions.find(promotion => promotion.looks.includes(promotionType))
+	if (itemPromotion !== undefined) {
+		return itemPromotion.price
+	}
+
+	return item.regularPrice
 }
 
-const result = getShoppingCart(identificador, products)
-console.log("resultado:" , result);
+function getShoppingCart(ids, productsList) {	
+	const productsById = getShoppingById(ids, productsList);
+	const productByCategory = getProductsByCategory(productsById);
+	const groupingCategory = pickCategoryToGroup(productByCategory);
+	const typePromotion = selectPromotionByCategory(groupingCategory);
+	const totalValueShoppingCart = calculateShoppingCartTotalPrice(typePromotion, productsById);
+	const totalValueShoppingCartWithDiscount = calculateShoppingCartTotalPriceWithDiscount(typePromotion, productsById);
+	const discountTotal = totalValueShoppingCart - totalValueShoppingCartWithDiscount
+	const percentage = discountTotal / totalValueShoppingCart * 100
 
+	const products = productsById.map(
+		product => ({ 
+			name: product.name,
+			category: product.category
+		})
+	)
+	
+	return {
+		products: products,
+		promotion: typePromotion,
+		totalPrice: totalValueShoppingCartWithDiscount.toFixed(2),
+		discountValue: discountTotal.toFixed(2),
+		discount: percentage.toFixed(2) + '%'
+	}
+};
 
-
-// export default { getShoppingCart };
-
-
-1. vou passar pelo array recebido de objetos, pegar o nome e a catrgoria de cada um e colocar no modelo de objeto final
-
-2. depois  vou passar novamente pelo array recebido de produtos, vou pegar os valores de cada e somar aplicando uma função que os some; o retorno de função de soma eu vou guardar no objeto final no lugar de total price
-
-3. vou passar no objeto final e conferir quantas categorias diferentes existentes naquele array; vou passar conferindo a categoria de cada item do objeto final e para cada iteração cado encontrada a categoria correspondente da pesquisa, irá me retornar true ou false, onde cada true será salvo num variável.
-
-Vou salvar numa variável com um array a quantidade de true recebido. 
-
-um contador irá passar no array de true para saber quantos true exitem e ira passar por uma condicional para saber qual promoção será aplicada e o retorno disso será  colocado no objeto final etiquetando o tipo de promoção.
-
-vou passar novamente pelo array recebecido inicialmete dos itens escolhidos e acessar promotions verificar em looks se a promoção etiquetada se encontra la, caso encontre ira passar por price e pegar o valor disponível 
-
-esse valor sera colocado em um array, onde um afunção de soma o receberá como parâmentro e fará os calculos de valor total.
-
-esse valor total será colocado no objeto final
-
-4. vou usar um switch para colocar cada possibilidade de promoção que receberá o nome do tipo de promoção colocada no objeto final
-
-5 um método vai pegar o valor final com desconto e o valor inicial sem desconto fazer o calculo percentual do desconto aplicado; o retorno dessa função será colocado no objeto final 
-
-
-
+module.exports = { getShoppingCart };
